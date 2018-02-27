@@ -1,0 +1,125 @@
+---
+title: "HW1_Howard"
+author: "KMH"
+date: "February 19, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library (dplyr)
+library (ggplot2)
+```
+
+#SECTION 1
+```{r}
+#Load the Democracy dataset into memory as dataframe.
+democracy <- read.csv("democracy.csv", stringsAsFactors = FALSE, na.strings = ".")
+```
+
+#SECTION 2
+```{r}
+#Report summary statistics (means and medians, etc.) for all variables
+summary(democracy)
+#Create a histogram for political liberties in which each unique value of the variable is in its own bin.  
+hist(democracy$POLLIB,
+     main="Political Liberties",
+     xlab="Political Liberty Spectrum",
+     border= "gold",
+     col="dark red",
+     xlim=c(1,7),
+     las=1)
+     
+#Create histogram for GDP per capita
+hist(democracy$GDPW,
+     main="GDP per capita",
+     xlab="GDP per capita Spectrum",
+     border="dark red",
+     col="gold")
+
+#Create a histogram for log GDP per-capita
+hist(log10(democracy$GDPW),
+     main="GDP per capita (log)",
+     xlab="log GDP per capita Spectrum",
+     border="gold",
+     col="dark red")
+
+#THIS HISTOGRAM IS DIFFERENT THAN THE ON FOR GDP PER CAPITA WHEN IT WAS NOT LOGGED BECAUSE IT LINEARIZES THE DENSITY TO BETTER VISSUALIZE THE SPREAD
+
+```
+
+#SECTION 3
+```{r}
+#Create a scatterplot of political liberties against GDP per capita.
+ggplot(democracy, aes(x = GDPW, y = POLLIB)) +
+  geom_point() + ggtitle("Political Liberties against GDP per Capita") +labs(y= "Political Liberties", x = "GDP per capita")
+#Same scatterplot, but jittered. 
+ggplot(democracy, aes(x = GDPW, y = POLLIB)) +
+  geom_point() + geom_jitter(width = 0, height = .5) +
+  ylab("Political Liberties") +
+  xlab("GDP per Capita") 
+
+#Scatterplot of political liberty against log GDP per capita.
+ggplot(democracy, aes(y = POLLIB, x = log10(GDPW))) +
+  geom_point() + geom_jitter(width = 0, height = .5)+
+  ylab("Political Liberties")+
+  xlab("GDP per capita (log)")
+
+#THIS RELATIONSHIP IS DIFFERENT THAN WHEN GDP PER CAPITA WAS NOT LOGGED BECAUSE THE LINEARIZATION OF THE LOG FUNCTION REMOVES THE AMBIGUITY OF THE CLUMPS, CREATING A BETTER UNDERSTANDING OF THE SPREAD AND RELATIONSHIP BETWEEN THE COUNTRIES.
+
+#Create a boxplot of GDP per capita for oil producing and non-oil producing nations
+boxplot(democracy$GDPW~democracy$OIL,data=democracy, main="Oil and GDP per capita",xlab="Non-Oil and Oil Producing Countries", ylab ="GDP per capita")
+
+```
+
+#SECTION 4
+```{r}
+#Calculate the mean GDP per capita in countires with at least 40 percent catholics.
+CATHMEAN <- democracy %>% filter(CATH >= 40) %>% select(GDPW)
+summary(CATHMEAN)
+# [ANSWER] 10295, COMPARED TO 8165 FOR ALL COUNTRIES
+
+summary(democracy %>% select(GDPW))
+#Calculate the average GDP per capita in countries with greater than 60% ethnolinguistic fractionalization, less than 60%, and missing ethnolinguistic fractionalization.
+ETHFRACGREAT <- filter(democracy, ELF60 > .6)$GDPW %>% mean(na.rm = TRUE)
+ETHFRACGREAT
+# [ANSWER] 3590.939
+
+ETHFRACLESS <- filter(democracy, ELF60 < .6)$GDPW %>% mean(na.rm = TRUE)
+ETHFRACLESS
+# [ANSWER] 11803.78
+
+democracy$ELF60[is.na(democracy$ELF60)] <- 999 
+ETHNFRACMISS <- filter(democracy, ELF60 == 999)$GDPW %>% mean(na.rm = TRUE)
+ETHNFRACMISS
+#[ANSWER] 7767
+
+#What was the median of the average years of education in 1985 for all countries?
+NEF1 <- democracy %>% filter(YEAR == 1985)
+summary(NEF1$EDT)
+# [ANSWER] 5.625
+
+#Which country was (or countries were) closest to the median years of education in 1985 among all countries?
+democracy %>% filter(EDT == 5.625 & YEAR == 1985) %>% glimpse
+# [ANSWER] VENEZUELA
+
+#What was the median of the average years of education in 1985 for democracies:
+EDUNEF <- democracy %>% filter(YEAR == 1985 & REG == 1) %>% select(EDT)
+summary(EDUNEF)
+# [ANSWER] 7.805
+
+#Which democracy was (or democracies were) closest to the median years of education in 1985 among all democracies?
+democracy %>% filter(EDT == 7.805 & YEAR == 1985) %>% glimpse
+# [ANSWER] Mauritius
+
+#What were the 25th and 75 percentiles of ethnolinguistic fractionalization for new and old countries?
+NC <- democracy %>% filter(NEWC == 1) %>% select(ELF60)
+summary(NC)
+# [ANSWER] 25-PERC(42%) & 75-PERC(75%)
+
+OC <- democracy %>% filter(NEWC == 0) %>% select(ELF60)
+summary(OC)
+# [ANSWER] 25-PERC(6%) & 75-PERC(44%)
+
+```
+
