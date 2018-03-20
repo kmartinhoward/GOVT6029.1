@@ -1,0 +1,243 @@
+---
+title: "HW2_Howard"
+author: "KMH"
+date: "March 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(ggplot2)
+
+sprinters <- read.csv("sprinters.csv")
+summary(sprinters)
+```
+#PROBLEM 1
+
+##SECTION 1 (MATRIX FORM)
+```{r}
+#Create a matrix X:
+sprinters$ones <- c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+x <- matrix(data = c(sprinters$ones, sprinters$year, sprinters$women), nrow = 42, ncol = 3, byrow = FALSE)
+
+#Create a matrix y:
+y <- matrix(data = c(sprinters$finish), nrow = 42, ncol = 1)
+
+#Compute b = (X'X)^-1*X'y:
+b <- (solve(t(x)%*%x)%*%t(x)%*%y)
+summary(b)
+```
+
+##SECTION 2 (FITTING A LINEAR MODEL)
+```{r}
+#Run a regression of finish on year and women:
+lm_finish <- lm(finish ~ year + women, data = sprinters)
+
+summary(lm_finish)
+
+#Comparison of results between this regression and the calculation in Section 1:
+#[ANSWER] The median (1.09) and the maximum (34.96) from Section 1 are the same as the coefficients for women and the intercept.
+```
+```{r}
+#Plot summarizing this regression:
+ggplot(sprinters, aes(x = year, y = finish, color = women)) + 
+  geom_point() +
+  labs(y = "100 Meter Dash - Finish Times", x = "Year") +
+  theme_bw() +
+  geom_smooth(method=lm, se = FALSE)
+
+```
+
+```{r}
+#Regression with interaction between women and year:
+lm_finish2 <- lm(finish ~ year*women, data = sprinters)
+
+summary(lm_finish2)
+```
+
+```{r}
+#Redo the plot with a new fit, one for each level of women:
+
+ggplot(lm_finish2, aes(x = sprinters$year, y = sprinters$finish, 
+                         ymin = 9, ymax = 13,
+                         color = factor(sprinters$women),
+                         fill = factor(sprinters$women))) +
+  geom_line() + geom_point() +
+  labs(title = "Best Olympic Time in Meter Sprint by Year",
+       y = "Best Time in Seconds in the Meter Sprint",
+       x = "Year") + 
+  scale_fill_discrete(name = "Sex",
+                      labels=c("Men","Women")) +
+  scale_color_discrete(name = "Sex",
+                      labels=c("Men","Women")) +
+  theme_bw()
+
+```
+
+
+#SECTION 3 (PREDICTED VALUES)
+```{r}
+#Application of the predict function to calculate the expected finishing time for men and for women (for 2001 Olympics):
+
+#For Men:
+Olym_Men_2001 <- predict(lm_finish, newdata = data.frame(year = 2001, women = 0), interval = "confidence", level = 0.95)
+summary(Olym_Men_2001)
+#[ANSWER] 9.729
+
+#For Women:
+Olym_Women_2001 <- predict(lm_finish, newdata = data.frame(year = 2001, women = 1), interval = "confidence", level = 0.95)
+summary(Olym_Women_2001)
+#[ANSWER] 10.82
+```
+
+```{r}
+#Application of the predict function to calculate the expected finishing time for men and for women (for 2156 Olympics):
+
+#for Men:
+Olym_Men_2156 <- predict(lm_finish, newdata = data.frame(year = 2156, women = 0), interval = "confidence", level = 0.95)
+summary(Olym_Men_2156)
+#[ANSWER] 7.775
+
+#For Women:
+Olym_Women_2156 <- predict(lm_finish, newdata = data.frame(year = 2156, women = 1), interval = "confidence", level = 0.95)
+summary(Olym_Women_2156)
+#[ANSWER] 8.868
+
+```
+
+```{r}
+#Do you trust the model's predictions?  Is there rason to trust the 2001 prediction more than the 2156?:
+
+#[ANSWER] The preidction for 2001 is more trustworthy than the 2156, as the year is much closer to the years included in the real dataset.  
+
+#Is there any assumption of the model being abused or overworked to make this prediction?
+
+#[ANSWER] There is an assumption that times will continue to increase in speed as this has been the case over the data set.  However, as a prediction in the year 3000 C.E. shows, if this pattern used in the prediction model were to continue all the way into the year 3000 C.E. runners would be running so fast that they would have negative times; obviously, an impossibility.  
+
+```
+
+#PROBLEM 2
+
+```{r}
+data("anscombe")
+```
+
+```{r}
+library("tidyverse")
+anscombe2 <- anscombe %>%
+    mutate(obs = row_number()) %>%
+    gather(variable_dataset, value, - obs) %>%
+    separate(variable_dataset, c("variable", "dataset"), sep = 1L) %>%
+    spread(variable, value) %>%
+    arrange(dataset, obs)
+```
+##SECTION 4 (LOOKING AT YOUR DATA BEYOND SUMMARY STATISTICS)
+
+```{r}
+#Calculate the mean and SDs of x and y, and correlation between x and y.  Run a linear regression between x and y for each dataset:
+
+#Data set 1:
+DS1 <- filter(anscombe2, dataset == 1)
+mean(DS1$x)
+#[ANSWER] 9
+mean(DS1$y)
+#[ANSWER] 7.5
+sd(DS1$x)
+#[ANSWER] 3.32
+sd(DS1$y)
+#[ANSWER] 2.03
+cor(DS1$x, DS1$y)
+#[ANSWER] 0.82
+
+lm_DS1 <- lm(y ~ x, data = DS1)
+summary(lm_DS1)
+
+```
+```{r}
+#Data set 2:
+DS2 <- filter(anscombe2, dataset == 2)
+mean(DS2$x)
+#[ANSWER] 9
+mean(DS2$y)
+#[ANSWER] 7.5
+sd(DS2$x)
+#[ANSWER] 3.32
+sd(DS2$y)
+#[ANSWER] 2.03
+cor(DS2$x, DS2$y)
+#[ANSWER] 0.82
+
+lm_DS2 <- lm(y ~ x, data = DS2)
+summary(lm_DS2)
+
+```
+```{r}
+#Data set 3:
+DS3 <- filter(anscombe2, dataset == 3)
+mean(DS3$x)
+#[ANSWER] 9
+mean(DS3$y)
+#[ANSWER] 7.5
+sd(DS3$x)
+#[ANSWER] 3.32
+sd(DS3$y)
+#[ANSWER] 2.03
+cor(DS3$x, DS3$y)
+#[ANSWER] 0.82
+
+lm_DS3 <- lm(y ~ x, data = DS3)
+summary(lm_DS3)
+```
+```{r}
+#Data set 4:
+DS4 <- filter(anscombe2, dataset == 4)
+mean(DS4$x)
+#[ANSWER] 9
+mean(DS4$y)
+#[ANSWER] 7.5
+sd(DS4$x)
+#[ANSWER] 3.32
+sd(DS4$y)
+#[ANSWER] 2.03
+cor(DS4$x, DS4$y)
+#[ANSWER] 0.82
+
+lm_DS4 <- lm(y ~ x, data = DS4)
+summary(lm_DS4)
+```
+```{r}
+#How similar do you think that these datasets will look?
+#[ANSWER] Due to the very similar descriptive statistics (mean, SDs, Correlations are the same when rounded to the hundredth spot) the data sets will look extremely similar.
+```
+
+```{r}
+#Scatter plot of each dataset and its linear regression fit:
+
+scatter_anscombe <- ggplot (anscombe2, aes(x, y))
+scatter_anscombe + geom_point() + facet_wrap(~dataset)
+```
+```{r}
+#How do we make sense of these plots:
+
+#[ANSWER] By taking the data and visualizing it, it permits a check on the linearity of the set.
+```
+
+
+#PROBLEM 3
+
+##SECTION 5 (RESEARCH PROJECT)
+
+```{r}
+#data description:
+
+#[ANSWER] Loading my data into R is going to be a challenge.  I work with survey data from the 1930s through the 1950s.  Much of this data comes in ascii file format. These types of data are very hard to convert in the first place and then they need to be properly weighted as well as surveys done during this era were collected in a bias manner.  Berinsky came out with an approach to weighting, which is difficult, but for many of the early surveys, this option isn't even possible.  There is a coded script that has been created at the Roper Center after manually configuring the ascii files (I have done this for multiple early surveys and I am still working through them)...long story short, I don't know how to get it in R, but I'm looking into it.  The variables are those found in the average survey; there are both categorical and numerical variables.  
+
+#The data looks at racial conservativism between the two American parties in the decades between the 1930s-1950s.  This distribution is hard to read so far because the questions are non-linear.  They are asked different ways, and racial attitudes change generally at different times during these eras.  I am planning on creating a hierarchical model to combat this challenge.  
+
+#All of the points in the second paragraph above point to the challenges that I face.  BLUE isn't present in old survey datas, but corrections are available using weighting techniques.  And my hierarchical modeling plan should assist in organizing my archaic survey data in a way that makes it valid for analysis by today's standards.
+```
+
